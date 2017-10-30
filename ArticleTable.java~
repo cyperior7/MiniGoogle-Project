@@ -1,0 +1,227 @@
+/*
+ * ArticleTable.java
+ * 
+ * This is a hash table of articles.
+ *
+ * Author: Justin Ingwersen (justini@bu.edu)
+ * Date: April 20, 2016
+ */
+
+public class ArticleTable {
+   
+   private class Node {
+       
+      Article data;
+      Node next;
+      Node next2;
+      
+      Node(Article data, Node n, Node n2) {
+         this.data = data;
+         this.next = n;
+         this.next2 = n2;
+      }
+    
+   }
+   
+   private final int SIZE = 2557;
+   public Node[] T = new Node[SIZE];
+   public Node head = null;
+   private Node iterateHead = null;
+   
+   //Checks if the article is a member
+   public boolean member(Article a) {
+      return (lookup(a.getTitle()) != null); 
+   }
+   
+   public boolean member(String title) {
+      return (lookup(title) != null); 
+   }
+   
+   //Initializes the array of articles into the article table
+   public void initialize(Article[] A) {
+      for(int i = 0; i < A.length; ++i) 
+         insert(A[i]); 
+   }
+   
+   // insert a into the table using the title of a as the hash key
+   public void insert(Article a) {
+       if (!member(a.getTitle())) {
+           Node newArticle = new Node(a, null, head); //Create new article with next pointing to nothing at first and next2 being shoved on the front of head(the master list)
+           head = newArticle; //point head back to this newly added article
+           T[hash(a.getTitle(), SIZE)] = insertHelper(T[hash(a.getTitle(), SIZE)], newArticle);
+       }
+   }
+   
+   private Node insertHelper(Node n, Node newInsert) {
+       if (n == null) {
+           return newInsert;
+       }
+       else if (n.next == null) {
+           n.next = newInsert;
+           return n;
+       }
+       else {
+           return insertHelper(n.next, newInsert);
+       }
+   }
+   
+   //Deletes an article from the bucket it is in and also the master list
+   public void delete(String title) {
+       T[hash(title, SIZE)] = deleteHelper(T[hash(title, SIZE)], title); //Delete from bucket
+       head = deleteML(head, title); //Delete from master list
+   }
+   
+   private Node deleteHelper(Node n, String key) {
+       if (n == null) {
+           return null;
+       }
+       else if (n.data.getTitle().compareTo(key) == 0) {
+           return n.next;
+       }
+       else {
+           n.next = deleteHelper(n.next, key);
+           return n;
+       }
+   }
+   
+   private Node deleteML(Node n, String key) {
+       if (n == null) {
+           return null;
+       }
+       else if (n.data.getTitle().compareTo(key) == 0) {
+           return n.next2;
+       }
+       else {
+           n.next2 = deleteML(n.next2, key);
+           return n;
+       }
+   }
+
+   // returns the article with the given title or null if not found
+   public Article lookup(String title) {  
+       return lookupHelper(T[hash(title, SIZE)], title);
+   }
+   
+   private Article lookupHelper(Node n, String title) {
+       if (n == null) {
+           return null;
+       }
+       else if (n.data.getTitle().compareTo(title) == 0) {
+           return n.data;
+       }
+       else {
+           return lookupHelper(n.next, title);
+       }
+   }
+   
+   // initialize the iterator
+   public void reset() { 
+       iterateHead = head;
+   }         
+   
+   public boolean hasNext() {
+       return (iterateHead != null);
+   }
+   
+   public Article next() {
+       Article p = iterateHead.data;
+       iterateHead = iterateHead.next2;
+       return p;
+   }
+   
+   //Debugging methods
+   public Article getHead() {
+       return head.data;
+   }
+   public void checkHead() {
+       if (head == null) {
+           System.out.println(head);
+       }
+       else {
+           System.out.println(head.data);
+       }
+   }
+   
+   //Instructed to use from the website http://research.cs.vt.edu/AVresearch/hashing/strings.php
+   //nFolding method to hash a string
+   private static int hash(String s, int M) {
+       
+       int intLength = s.length() / 4;
+       int sum = 0;
+       for (int j = 0; j < intLength; j++) {
+           char c[] = s.substring(j * 4, (j * 4) + 4).toCharArray();
+           long mult = 1;
+           for (int k = 0; k < c.length; k++) {
+               sum += c[k] * mult;
+               mult *= 256;
+           }
+       }
+       char c[] = s.substring(intLength * 4).toCharArray();
+       long mult = 1;
+       for (int k = 0; k < c.length; k++) {
+           sum += c[k] * mult;
+           mult *= 256;
+       }
+           
+       return(Math.abs(sum) % M);
+   }
+   
+    public static void main(String[] args) {
+        ArticleTable A = new ArticleTable();
+        
+        Article Q = new Article("Hey", "I know you");
+        Article R = new Article("Say", "How are you");
+        Article S = new Article("Nay", "As I lay in the hay");
+        Article T = new Article("Bay", "Is where I stay");
+        
+        //Test insert and lookup
+        A.insert(Q);
+        A.insert(R);
+        A.insert(S);
+        A.insert(T);
+
+        System.out.println("Testing if items were correctly inserted. Should print:");
+        System.out.println("Hey\n===\nI know you");
+        System.out.println(A.lookup(Q.getTitle()));
+        
+        System.out.println("\nShould print:");
+        System.out.println("Say\n===\nHow are you");
+        System.out.println(A.lookup(R.getTitle()));
+        
+        System.out.println("\nShould print:");
+        System.out.println("Nay\n===\nAs I lay in the hay");
+        System.out.println(A.lookup(S.getTitle()));
+        
+        System.out.println("\nShould print:");
+        System.out.println("Bay\n===\nIs where I stay");
+        System.out.println(A.lookup(T.getTitle()));
+        
+        //Testing delete
+        A.delete(Q.getTitle());
+        A.delete(S.getTitle());
+        
+        System.out.println("\nTesting delete. Should print:\nnull");
+        System.out.println(A.lookup(Q.getTitle()));
+        System.out.println("\nShould print:\nnull");
+        System.out.println(A.lookup(S.getTitle()));
+        System.out.println("\nShould print:");
+        System.out.println("Say\n===\nHow are you");
+        System.out.println(A.lookup(R.getTitle()));
+        
+        System.out.println("Checking where the head should be. Should print:");
+        System.out.println("Bay\n===\nIs where I stay");
+        System.out.println(A.getHead());
+        
+        //Testing iterator
+        System.out.println("\nTesting the iterator and its methods. Should print:");
+        System.out.println("Bay\n===\nIs where I stay");
+        System.out.println("Say\n===\nHow are you\n");
+        A.reset();
+        while(A.hasNext()) {
+            Article a = A.next(); 
+            System.out.println(a);
+        }
+        
+                               
+    }
+}
